@@ -1,0 +1,24 @@
+services:
+  mongodb1:
+    image: percona/percona-server-mongodb:8.0-multi
+    container_name: mongodb1
+    hostname: mongodb1
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - 27017:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb1:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 10s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - "mongodb1_data:/data/db"
+      - "mongodb1_config:/data/configdb"
+
+volumes:
+  mongodb1_data:
+  mongodb1_config:
