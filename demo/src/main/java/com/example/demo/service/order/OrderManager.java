@@ -1,7 +1,5 @@
 package com.example.demo.service.order;
 
-import lombok.val;
-
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +27,7 @@ public class OrderManager implements Consumer<Order> {
     }
 
     public synchronized LinkedList<Order> getFullyFulfilled() {
-        val fulfilled = new LinkedList<Order>();
+        var fulfilled = new LinkedList<Order>();
         buyOrders.forEach((buy, buyFulfilledBy)->{
             sellOrders.forEach((sell, sellFulfilledBy)->{
                 int buyUnFulfilled = unfulfilled(buy,buyFulfilledBy);
