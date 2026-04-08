@@ -6,8 +6,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -69,10 +70,99 @@ public class MyClass {
     }
 
 
+    static Runnable runnableSleepyCyclic(int id, CyclicBarrier cyclicBarrier) {
+        return () -> {
+            try {
+                long start = System.currentTimeMillis();
+                System.out.println("--:"+id+" WAIT:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " cb_parties:"+cyclicBarrier.getParties()+ " cb_w:"+cyclicBarrier.getNumberWaiting() + " broken:" +  cyclicBarrier.isBroken());
+                cyclicBarrier.await();
+                System.out.println("--:"+id+" START:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " cb_parties:"+cyclicBarrier.getParties()+ " cb_w:"+cyclicBarrier.getNumberWaiting() + " broken:" +  cyclicBarrier.isBroken());
+                Thread.sleep(1000);
+                System.out.println("--:"+id+"  END:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " cb_parties:"+cyclicBarrier.getParties()+ " cb_w:"+cyclicBarrier.getNumberWaiting() + " broken:" +  cyclicBarrier.isBroken());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    static void thread_cb() {
+        CyclicBarrier cyclicBarrier = new CyclicBarrier(3);
+        IntStream.rangeClosed(0, 9)
+                .sequential()
+                .mapToObj(i -> runnableSleepyCyclic(i, cyclicBarrier))
+                .map(Thread::new)
+                .forEach(Thread::start);
+    }
+
+
+
+
+
+
+    // Barrier action executed when all threads reach the barrier
+    static class BarrierAction implements Runnable {
+        public void run() {
+            System.out.println("All threads reached the barrier. Merging data...");
+        }
+    }
+
+
+    static class WorkerTask implements Runnable {
+        private final CyclicBarrier barrier;
+        private final int id;
+
+        public WorkerTask(CyclicBarrier barrier, int id) {
+            this.barrier = barrier;
+            this.id = id;
+        }
+
+        @Override
+        public void run() {
+            try {
+                System.out.println("Thread-" + id + " is waiting..." +  barrier.getParties() + "/" + barrier.getNumberWaiting() + ":" + barrier.isBroken());
+                barrier.await(); // Wait for other threads
+                Thread.sleep(2000); // Simulate work
+                System.out.println("Thread-" + id + " waiting at barrier." +  barrier.getParties() + "/" + barrier.getNumberWaiting() + ":" + barrier.isBroken());
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static class Something {
+        static int i = 0;
+        static ReentrantLock lock = new ReentrantLock();
+
+
+        static void addOne() {
+            lock.tryLock();
+        }
+    }
+
+
+
+    public static void do_cyclic() {
+        // Create a CyclicBarrier for 3 parties with a barrier action
+        CyclicBarrier barrier = new CyclicBarrier(3, new BarrierAction());
+
+        // Create and start 3 threads
+        for (int i = 1; i <= 4; i++) {
+            new Thread(new WorkerTask(barrier, i)).start();
+        }
+
+        System.out.println("-------end");
+    }
+
+
+
+
+
     static void main() {
         //thread1();
         //thread_latch();
-        thread_latch_expires();
+        //thread_latch_expires();
+        //thread_cb();
+        do_cyclic();
     }
 
 }
