@@ -15,7 +15,6 @@ public class OrderManager implements Consumer<Order> {
         switch(order) {
             case Sell s -> sellOrders.put(s, new Fulfillment<>());
             case Buy b -> buyOrders.put(b, new Fulfillment<>());
-            default -> throw new IllegalStateException("Unexpected value: " + order);
         }
     }
 
