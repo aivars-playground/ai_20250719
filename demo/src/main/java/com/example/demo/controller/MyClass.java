@@ -2,13 +2,11 @@ package com.example.demo.controller;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -95,7 +93,31 @@ public class MyClass {
     }
 
 
+    static Runnable runnableSleepySemaphore(int id, Semaphore semaphore) {
+        return () -> {
+            try {
+                long start = System.currentTimeMillis();
+                System.out.println("--:"+id+" WAIT:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " length:"+semaphore.getQueueLength()+ " availablePermits:"+semaphore.availablePermits());
+                semaphore.acquire();
+                System.out.println("--:"+id+" START:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " length:"+semaphore.getQueueLength()+ " availablePermits:"+semaphore.availablePermits());
+                Thread.sleep(RandomGenerator.getDefault().nextLong(1000, 10000));
+                System.out.println("--:"+id+"  END:"+(System.currentTimeMillis()-start)+" @" + Thread.currentThread().threadId()+ " length:"+semaphore.getQueueLength()+ " availablePermits:"+semaphore.availablePermits());
+                semaphore.release();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
 
+
+    static void thread_semaphore() {
+        Semaphore semaphore = new Semaphore(3);
+        IntStream.rangeClosed(0, 9)
+                .sequential()
+                .mapToObj(i -> runnableSleepySemaphore(i, semaphore))
+                .map(Thread::new)
+                .forEach(Thread::start);
+    }
 
 
 
@@ -162,7 +184,8 @@ public class MyClass {
         //thread_latch();
         //thread_latch_expires();
         //thread_cb();
-        do_cyclic();
+        //do_cyclic();
+        thread_semaphore();
     }
 
 }
