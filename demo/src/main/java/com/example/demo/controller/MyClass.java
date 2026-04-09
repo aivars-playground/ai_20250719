@@ -177,6 +177,40 @@ public class MyClass {
 
 
 
+    static Callable<Double> getCallableSquare(int num) {
+        return () -> {
+            Thread.sleep(1000); // Simulate work
+            return Math.pow(num, 2); // Return a result
+        };
+    }
+
+    public static void do_ec_callable() {
+
+        // Create a Callable task using a lambda
+
+        List<Callable<Double>> tasks = IntStream.rangeClosed(0, 9)
+                .sequential()
+                .mapToObj(i -> getCallableSquare(i))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        Callable<Double> cd = getCallableSquare(1);
+
+        try (ExecutorService executor = Executors.newCachedThreadPool()){
+            List<Future<Double>> res = executor.invokeAll(tasks);
+            res.forEach(future -> {
+                try {
+                    System.out.println(future.get());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("InterruptedException:" + e.getMessage());
+        }
+    }
+
 
 
     static void main() {
@@ -185,7 +219,8 @@ public class MyClass {
         //thread_latch_expires();
         //thread_cb();
         //do_cyclic();
-        thread_semaphore();
+        //thread_semaphore();
+        do_ec_callable();
     }
 
 }
