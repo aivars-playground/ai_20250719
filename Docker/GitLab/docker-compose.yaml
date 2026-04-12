@@ -18,18 +18,45 @@ services:
       - 'gitlab_data:/var/opt/gitlab'
     shm_size: '256m'
     restart: no
-  gitlab-runner:
-    image: 'gitlab/gitlab-runner:latest'
-    container_name: gitlab-runner
+
+  dind:
+    image: docker:24.0.5-dind
+    container_name: dind
+    restart: always
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: "/certs"
+      DOCKER_TLS_SAN: "DNS:dind"
     volumes:
-      - '/var/run/docker.sock.raw:/var/run/docker.sock'
-      - 'gitlab-runner_data:/etc/gitlab-runner'
+      - dind-storage:/var/lib/docker
+      - certs:/certs
+    healthcheck:
+      test: [ "CMD", "docker", "info" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: always
     depends_on:
-      - gitlab
-    restart: no
+      dind:
+        condition: service_healthy
+    environment:
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_CERT_PATH=/certs/client
+    volumes:
+      - gitlab-runner_data:/etc/gitlab-runner
+      - certs:/certs:ro
+
 
 volumes:
   gitlab_config:
   gitlab_logs:
   gitlab_data:
   gitlab-runner_data:
+  dind-storage:
+  certs:
