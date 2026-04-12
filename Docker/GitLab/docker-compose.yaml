@@ -18,6 +18,8 @@ services:
       - 'gitlab_data:/var/opt/gitlab'
     shm_size: '256m'
     restart: no
+    networks:
+      - gitlab-network
 
   dind:
     image: docker:24.0.5-dind
@@ -36,14 +38,13 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    networks:
+      - gitlab-network
 
   gitlab-runner:
     image: gitlab/gitlab-runner:latest
     container_name: gitlab-runner
     restart: always
-    depends_on:
-      dind:
-        condition: service_healthy
     environment:
       - DOCKER_HOST=tcp://dind:2376
       - DOCKER_TLS_VERIFY=1
@@ -51,7 +52,8 @@ services:
     volumes:
       - gitlab-runner_data:/etc/gitlab-runner
       - certs:/certs:ro
-
+    networks:
+      - gitlab-network
 
 volumes:
   gitlab_config:
@@ -60,3 +62,6 @@ volumes:
   gitlab-runner_data:
   dind-storage:
   certs:
+
+networks:
+  gitlab-network:
