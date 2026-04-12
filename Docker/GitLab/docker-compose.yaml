@@ -1,0 +1,28 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:18.10.3-ce.0
+    container_name: gitlab
+    hostname: 'gitlab.example.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        letsencrypt['enable'] = false
+        external_url 'http://gitlab.example.com'
+        gitlab_rails['initial_root_password'] = 'your_password'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22:22'
+    volumes:
+      - 'gitlab_config:/etc/gitlab'
+      - 'gitlab_logs:/var/log/gitlab'
+      - 'gitlab_data:/var/opt/gitlab'
+    shm_size: '256m'
+    restart: no
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+
+
+
