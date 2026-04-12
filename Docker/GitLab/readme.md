@@ -21,6 +21,9 @@ docker exec -it gitlab-runner gitlab-runner register
 ```
 choose shell script
 
+add to gitlab runner toml config
+extra_hosts = ["gitlab.example.com:<ip_of_server>"]
+
 
 
 
