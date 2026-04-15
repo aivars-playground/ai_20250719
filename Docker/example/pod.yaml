@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-app
+  labels:
+    app: simple-app
+spec:
+  containers:
+    - name: simple-app
+      image: dbclinton/simple-app:latest
+      ports:
+        - containerPort: 5000
