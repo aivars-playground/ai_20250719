@@ -1,3 +1,9 @@
+NOTE: on MacOs use
+------------------
+```shell
+kubectl port-forward simple-app 5000:5000
+```
+
 based on
 --------
 Pods in Kubernetes
@@ -58,4 +64,20 @@ kubectl logs multi-container-app -c main-app
 ```
 ```shell
 kubectl logs multi-container-app -c logger-app
+```
+
+***** tagged as v1 is the first simple app version ***
+add some changes to the app
+```
+docker build -t aivarssmaukstelis/simple-app:latest .
+docker push aivarssmaukstelis/simple-app:latest
+```
+
+```shell
+kubectl get pods
+kubectl delete pod simple-app
+kubectl apply -f pod.yaml
+kubectl get pods
+kubectl port-forward simple-app 5000:5000 &
+curl localhost:5000
 ```

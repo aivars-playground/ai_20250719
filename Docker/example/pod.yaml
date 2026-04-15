@@ -7,6 +7,6 @@ metadata:
 spec:
   containers:
     - name: simple-app
-      image: dbclinton/simple-app:latest
+      image: aivarssmaukstelis/simple-app:latest
       ports:
         - containerPort: 5000

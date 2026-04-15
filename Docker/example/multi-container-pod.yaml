@@ -8,7 +8,7 @@ spec:
   containers:
     #main app
     - name: main-app
-      image: dbclinton/simple-app:latest
+      image: aivarssmaukstelis/simple-app:latest
       ports:
         - containerPort: 5000
       env:
