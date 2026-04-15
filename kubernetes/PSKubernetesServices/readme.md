@@ -42,3 +42,16 @@ does not work on MacOs...
 ```shell
 curl 172.18.0.2:31474
 ```
+
+=======================
+```shell
+kubectl apply -f backend-deployment.yaml
+kubectl apply -f frontend-deployment.yaml
+```
+
+```shell
+kubectl logs -f deployment/frontend
+```
+```shell
+kubectl apply -f backend-service.yaml
+```
