@@ -82,4 +82,13 @@ kubectl port-forward simple-app 5000:5000 &
 curl localhost:5000
 ```
 
-***** tagged as v2***
+Deployments (self-healing)
+-----------
+```shell
+kubectl apply -f deployment1.yaml
+kubectl get deployments
+kubectl scale deployment deployment1 --replicas=5
+kubectl get pods
+kubectl delete pod deployment1-58766fcfdd-lpgxs
+kubectl get pods
+```
