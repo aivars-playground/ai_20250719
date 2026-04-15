@@ -81,3 +81,5 @@ kubectl get pods
 kubectl port-forward simple-app 5000:5000 &
 curl localhost:5000
 ```
+
+***** tagged as v2***
