@@ -9,19 +9,18 @@ spec:
       app: frontend
   template:
     metadata:
-      name: frontend
       labels:
         app: frontend
     spec:
       containers:
         - name: curl-loop
           image: curlimages/curl:latest
-          command: ['/bin/sh']
+          command: ["/bin/sh"]
           args:
             - "-c"
             - |
               while true; do
-                echo "======= call curl ========"
+                echo "=== Calling backend-service:80 ==="
                 curl -s backend-service:80
                 echo
                 sleep 5

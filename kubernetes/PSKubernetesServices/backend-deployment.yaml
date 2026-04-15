@@ -9,7 +9,6 @@ spec:
       app: backend
   template:
     metadata:
-      name: backend
       labels:
         app: backend
     spec:
@@ -18,6 +17,6 @@ spec:
           image: hashicorp/http-echo:latest
           args:
             - "-listen=:8080"
-            - "-text=Hello"
+            - "-text=Hello from the Backend!"
           ports:
             - containerPort: 8080
