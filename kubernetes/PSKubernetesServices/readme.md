@@ -43,6 +43,44 @@ does not work on MacOs...
 curl 172.18.0.2:31474
 ```
 
+FIX for macos
+```shell
+kind create cluster --config kind.yaml
+```
+```kind.yaml
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: dev
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 30000
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+  - role: worker
+```
+```shell
+kubectl create deployment my-nginx --image=nginx:latest --port=80
+```
+```text
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-service
+spec:
+  type: NodePort
+  selector:
+    app: my-nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30000
+```
+```shell
+curl localhost:30000
+```
 =======================
 ```shell
 kubectl apply -f backend-deployment.yaml
