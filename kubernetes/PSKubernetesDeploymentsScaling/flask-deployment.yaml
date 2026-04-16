@@ -1,0 +1,40 @@
+# Kubernetes Deployment YAML:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      containers:
+        - name: flask-container
+          image: aivarssmaukstelis/flask-app:latest
+          ports:
+            - containerPort: 5000
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            failureThreshold: 6  # Allows up to 60s (6 x 10s) for startup
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 35  # Delays restart until recovery is possible
+            periodSeconds: 10
+            failureThreshold: 3
