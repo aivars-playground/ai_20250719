@@ -15,3 +15,7 @@ target/
 
 ### Mac OS ###
 .DS_Store
+
+### DATA ###
+.data
+.env
