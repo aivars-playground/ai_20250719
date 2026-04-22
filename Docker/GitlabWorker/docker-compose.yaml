@@ -1,0 +1,41 @@
+services:
+  dind:
+    image: docker:dind
+    hostname: dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes:
+      - dind-storage:/var/lib/docker
+      - certs:/certs
+    networks:
+      gitlab-worker:
+
+  cli:
+    image: docker:cli
+    environment:
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_CERT_PATH=/certs/client
+    volumes:
+      - certs:/certs:ro
+    depends_on:
+      - dind
+    profiles:
+      - manual
+    networks:
+      gitlab-worker:
+
+  busybox:
+    image: busybox
+    profiles:
+      - manual
+    networks:
+      gitlab-worker:
+
+volumes:
+  dind-storage:
+  certs:
+
+networks:
+  gitlab-worker:
