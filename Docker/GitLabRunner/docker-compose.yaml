@@ -13,7 +13,7 @@ services:
         gitlab_rails['gitlab_shell_ssh_port'] = 22
         gitlab_rails['initial_root_password'] = 'supersecret'
     ports:
-      - '8080:80'
+      - '80:80'
       - '443:443'
       - '22:22'
     volumes:
