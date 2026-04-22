@@ -20,3 +20,8 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 10 -nodes \
     -subj "/CN=gitlab.example.com" \
     -addext "subjectAltName=DNS:gitlab.example.com,IP:127.0.0.1"
 ```
+
+start gitlab (takes up to 5 minutes)
+```shell
+docker compose up -d
+```
