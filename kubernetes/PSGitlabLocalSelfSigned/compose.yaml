@@ -2,6 +2,7 @@ services:
 
   create-certificate:
     image: alpine/openssl:3.5.6
+    restart: no
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
@@ -52,6 +53,7 @@ services:
   dind:
     image: docker:29.4.1-dind
     hostname: dind
+    restart: always
     privileged: true
     environment:
       - DOCKER_TLS_CERTDIR=/certs
@@ -60,9 +62,10 @@ services:
       - ./.secrets/dind_SERVICE/certs:/certs
       - './.data/dind_SERVICE/dind-storage:/var/lib/docker'
     networks:
-      gitlab-worker:
+      - gitlab-worker
 
   cli:
+    #  docker compose run cli docker ps
     image: docker:29.4.1-cli
     environment:
       - DOCKER_HOST=tcp://dind:2376
@@ -73,11 +76,45 @@ services:
       - ./.secrets/dind_SERVICE/certs:/certs:ro
     depends_on:
       - dind
+    restart: no
     profiles:
       - manual
     networks:
-      gitlab-worker:
-  #  docker compose run cli docker ps
+      - gitlab-worker
+
+  ubuntu:
+    # docker compose run ubuntu
+    #  git clone https://gitlab.example.com/root/abc.git
+    image: ubuntu:22.04
+    volumes:
+      - ./.secrets/create-certificate_SERVICE/ssl:/gitlab/certs:ro
+    depends_on:
+      create-certificate:
+        condition: service_completed_successfully
+    profiles:
+      - manual
+    networks:
+      - gitlab-worker
+    extra_hosts:
+      - "gitlab.example.com:host-gateway"
+    command: ["/bin/bash","-c", "\
+      echo '****************** Installing missing packages (long/can break)...' && \
+      apt update -qq --fix-missing && apt install -yqq ca-certificates git curl wget iputils-ping && \
+      echo '****************** PING gitlab...' && \
+      ping -c 1 gitlab.example.com && \
+      echo '****************** Validate untrusted certificate...' && \
+      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
+      echo '****************** Installing certificate...' && \
+      cp /gitlab/certs/gitlab.example.com.crt /usr/local/share/ca-certificates/ && \
+      update-ca-certificates && \
+      echo '****************** Validate installed certificate...' && \
+      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
+      echo '****************** DONE...' && \
+      /bin/bash
+    "]
+    tty: true
+    stdin_open: true
+
 
 networks:
   gitlab-internal:
