@@ -1,7 +1,7 @@
 services:
 
-  self-sign-certificate:
-    image: alpine/openssl
+  create-certificate:
+    image: alpine/openssl:3.5.6
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
@@ -11,21 +11,20 @@ services:
             -keyout /app/ssl/gitlab.example.com.key \
             -out    /app/ssl/gitlab.example.com.crt \
             -subj "/O=HOME/CN=gitlab.example.com" \
-            -addext "subjectAltName=DNS:gitlab.example.com,IP:127.0.0.1" \
-            -addext "keyUsage = do not use in PROD"
+            -addext "subjectAltName=DNS:gitlab.example.com,IP:127.0.0.1"
         else
           echo "Self-signed certificate exists, skipping"
           ls /app/ssl -a
         fi
     volumes:
-      - './.secrets/self-sign-certificate_SERVICE/ssl:/app/ssl'
+      - './.secrets/create-certificate_SERVICE/ssl:/app/ssl'
 
   gitlab:
     image: gitlab/gitlab-ce:18.10.4-ce.0
     container_name: gitlab
     restart: always
     depends_on:
-      self-sign-certificate:
+      create-certificate:
         condition: service_completed_successfully
     hostname: 'gitlab.example.com'
     shm_size: '256m'
@@ -37,19 +36,49 @@ services:
         nginx['ssl_certificate'] = "/etc/gitlab/ssl/gitlab.example.com.crt"
         nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/gitlab.example.com.key"
         gitlab_rails['gitlab_shell_ssh_port'] = 22
-        gitlab_rails['initial_root_password'] = 'YourSecurePassword123!'
+        gitlab_rails['initial_root_password'] = 'strongpassword'
     ports:
       - '80:80'
       - '443:443'
       - '22:22'
     volumes:
-      - './.secrets/self-sign-certificate_SERVICE/ssl:/etc/gitlab/ssl:ro'
-      - './.data/GITLAB_SERVICE/config:/etc/gitlab'
-      - './.data/GITLAB_SERVICE/logs:/var/log/gitlab'
-      - './.data/GITLAB_SERVICE/data:/var/opt/gitlab'
+      - './.secrets/create-certificate_SERVICE/ssl:/etc/gitlab/ssl:ro'
+      - './.data/gitlab_SERVICE/config:/etc/gitlab'
+      - './.data/gitlab_SERVICE/logs:/var/log/gitlab'
+      - './.data/gitlab_SERVICE/data:/var/opt/gitlab'
     networks:
       - gitlab-internal
 
+  dind:
+    image: docker:dind
+    hostname: dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_TLS_SAN=DNS:dind
+    volumes:
+      - ./.secrets/dind_SERVICE/certs:/certs
+      - './.data/dind_SERVICE/dind-storage:/var/lib/docker'
+    networks:
+      gitlab-worker:
+
+  cli:
+    image: docker:cli
+    environment:
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+    volumes:
+      - ./.secrets/dind_SERVICE/certs:/certs:ro
+    depends_on:
+      - dind
+    profiles:
+      - manual
+    networks:
+      gitlab-worker:
+  #  docker compose run cli docker ps
+
 networks:
   gitlab-internal:
-  runner-internal:
+  gitlab-worker:
