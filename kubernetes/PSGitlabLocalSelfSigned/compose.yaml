@@ -1,4 +1,5 @@
 services:
+
   self-sign-certificate:
     image: alpine/openssl
     entrypoint: [ "/bin/sh", "-c" ]
@@ -51,3 +52,4 @@ services:
 
 networks:
   gitlab-internal:
+  runner-internal:
