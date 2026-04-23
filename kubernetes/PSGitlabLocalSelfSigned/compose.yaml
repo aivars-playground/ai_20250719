@@ -50,7 +50,7 @@ services:
       - gitlab-internal
 
   dind:
-    image: docker:dind
+    image: docker:29.4.1-dind
     hostname: dind
     privileged: true
     environment:
@@ -63,7 +63,7 @@ services:
       gitlab-worker:
 
   cli:
-    image: docker:cli
+    image: docker:29.4.1-cli
     environment:
       - DOCKER_HOST=tcp://dind:2376
       - DOCKER_TLS_VERIFY=1
