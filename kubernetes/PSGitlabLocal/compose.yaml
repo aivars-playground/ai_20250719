@@ -11,15 +11,15 @@ services:
         letsencrypt['enable'] = true
         nginx['redirect_http_to_https'] = true
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
-        gitlab_rails['initial_root_password'] = 'supersecret'
+        gitlab_rails['initial_root_password'] = 'password'
     ports:
       - '80:80'
       - '443:443'
       - '2222:2222'
     volumes:
-      - './.data/GITLAB_HOME/config:/etc/gitlab'
-      - './.data/GITLAB_HOME/logs:/var/log/gitlab'
-      - './.data/GITLAB_HOME/data:/var/opt/gitlab'
+      - './.data/GITLAB_SERVICE/config:/etc/gitlab'
+      - './.data/GITLAB_SERVICE/logs:/var/log/gitlab'
+      - './.data/GITLAB_SERVICE/data:/var/opt/gitlab'
     networks:
       - gitlab-internal
 
