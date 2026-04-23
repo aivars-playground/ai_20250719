@@ -82,8 +82,8 @@ services:
     networks:
       - gitlab-worker
 
-  ubuntu:
-    # docker compose run ubuntu
+  test-certificate:
+    # docker compose run test-certificate
     #  git clone https://gitlab.example.com/root/abc.git
     image: ubuntu:22.04
     volumes:
@@ -99,7 +99,7 @@ services:
       - "gitlab.example.com:host-gateway"
     command: ["/bin/bash","-c", "\
       echo '****************** Installing missing packages (long/can break)...' && \
-      apt update -qq --fix-missing && apt install -yqq ca-certificates git curl wget iputils-ping && \
+      apt clean -qq && apt update -qq && apt install -yqq ca-certificates git curl wget iputils-ping && \
       echo '****************** PING gitlab...' && \
       ping -c 1 gitlab.example.com && \
       echo '****************** Validate untrusted certificate...' && \
@@ -110,7 +110,7 @@ services:
       echo '****************** Validate installed certificate...' && \
       echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
       echo '****************** DONE...' && \
-      /bin/bash
+      /bin/bash \
     "]
     tty: true
     stdin_open: true
