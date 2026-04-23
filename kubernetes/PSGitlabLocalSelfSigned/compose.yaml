@@ -1,0 +1,53 @@
+services:
+  self-sign-certificate:
+    image: alpine/openssl
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        if [ ! -f /app/ssl/gitlab.example.com.key ] || [ ! -f /app/ssl/gitlab.example.com.crt ]; then
+          echo "Generating self-signed certificate with SAN..."
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 10 -nodes \
+            -keyout /app/ssl/gitlab.example.com.key \
+            -out    /app/ssl/gitlab.example.com.crt \
+            -subj "/O=HOME/CN=gitlab.example.com" \
+            -addext "subjectAltName=DNS:gitlab.example.com,IP:127.0.0.1" \
+            -addext "keyUsage = do not use in PROD"
+        else
+          echo "Self-signed certificate exists, skipping"
+          ls /app/ssl -a
+        fi
+    volumes:
+      - './.secrets/self-sign-certificate_SERVICE/ssl:/app/ssl'
+
+  gitlab:
+    image: gitlab/gitlab-ce:18.10.4-ce.0
+    container_name: gitlab
+    restart: always
+    depends_on:
+      self-sign-certificate:
+        condition: service_completed_successfully
+    hostname: 'gitlab.example.com'
+    shm_size: '256m'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.example.com'
+        letsencrypt['enable'] = false
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/gitlab.example.com.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/gitlab.example.com.key"
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        gitlab_rails['initial_root_password'] = 'YourSecurePassword123!'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22:22'
+    volumes:
+      - './.secrets/self-sign-certificate_SERVICE/ssl:/etc/gitlab/ssl:ro'
+      - './.data/GITLAB_SERVICE/config:/etc/gitlab'
+      - './.data/GITLAB_SERVICE/logs:/var/log/gitlab'
+      - './.data/GITLAB_SERVICE/data:/var/opt/gitlab'
+    networks:
+      - gitlab-internal
+
+networks:
+  gitlab-internal:
