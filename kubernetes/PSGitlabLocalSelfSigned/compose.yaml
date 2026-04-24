@@ -62,7 +62,7 @@ services:
       - ./.secrets/dind_SERVICE/certs:/certs
       - './.data/dind_SERVICE/dind-storage:/var/lib/docker'
     networks:
-      - gitlab-worker
+      - gitlab-internal
 
   cli:
     #  docker compose run cli docker ps
@@ -80,7 +80,7 @@ services:
     profiles:
       - manual
     networks:
-      - gitlab-worker
+      - gitlab-internal
 
   test-certificate:
     # docker compose run test-certificate
@@ -104,14 +104,94 @@ services:
     profiles:
       - manual
     networks:
-      - gitlab-worker
+      - gitlab-internal
     extra_hosts:
       - "gitlab.example.com:host-gateway"
     command: ["/bin/bash"]
     tty: true
     stdin_open: true
+#
+#  runner:
+#    image: gitlab/gitlab-runner
+#    restart: always
+#    depends_on:
+#      create-certificate:
+#        condition: service_completed_successfully
+#      gitlab:
+#        condition: service_healthy
+#    environment:
+#      - DOCKER_HOST=tcp://dind:2376
+#      - DOCKER_TLS_VERIFY=1
+#      - DOCKER_TLS_CERTDIR=/certs
+#      - DOCKER_CERT_PATH=/certs/client
+#    volumes:
+#      - ./.secrets/dind_SERVICE/certs:/certs
+#      - ./.data/runner_SERVICE/runner-storage:/etc/gitlab-runner:z
+#      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro
+#    networks:
+#      gitlab-worker:
+#    extra_hosts:
+#      - "gitlab.example.com:host-gateway"
 
+  runner:
+    image: gitlab/gitlab-runner
+    profiles:
+      - manual
+    environment:
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+    volumes:
+      - ./.secrets/dind_SERVICE/certs:/certs
+      - ./.data/runner_SERVICE/runner-storage:/etc/gitlab-runner:z
+      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro
+    networks:
+      - gitlab-internal
+    extra_hosts:
+      - "gitlab.example.com:host-gateway"
+
+  register-runner-docker:
+    image: gitlab/gitlab-runner
+    depends_on:
+      - dind
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        if [ ! -f /etc/gitlab-runner/config.toml ]; then
+          echo "Config does not exist, registering runner..."
+          gitlab-runner register \
+            --non-interactive \
+            --locked=false \
+            --name="GitLab Docker Runner" \
+            --executor=docker \
+            --docker-image=ubuntu:22.04 \
+            --docker-host=tcp://dind:2376 \
+            --docker-volumes "/etc/gitlab-runner/certs:/etc/gitlab-runner/certs" \
+            --docker-extra-hosts="gitlab.example.com:host-gateway" \
+            --tag-list="docker,ubuntu" \
+            --run-untagged=true \
+            --tls-ca-file=/etc/gitlab-runner/certs/gitlab.example.com.crt
+        else
+          echo "Runner config already exists, skipping registration"
+        fi
+    environment:
+      - CI_SERVER_URL=https://gitlab.example.com
+      - REGISTRATION_TOKEN=2Ej7yHbUSeYH6mivKVTE
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+    volumes:
+      - ./.secrets/dind_SERVICE/certs:/certs
+      - ./.data/runner_SERVICE/runner-storage:/etc/gitlab-runner:z
+      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro
+    profiles:
+      - manual
+    networks:
+      gitlab-internal:
+    extra_hosts:
+      - "gitlab.example.com:host-gateway"
 
 networks:
   gitlab-internal:
-  gitlab-worker:
