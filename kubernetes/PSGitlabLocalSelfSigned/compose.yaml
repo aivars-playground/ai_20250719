@@ -84,8 +84,18 @@ services:
 
   test-certificate:
     # docker compose run test-certificate
-    #  git clone https://gitlab.example.com/root/abc.git
-    image: ubuntu:22.04
+    # in command line run:
+    #      apt update && \
+    #      apt upgrade -y && \
+    #      apt install -y git iputils-ping && \
+    #      apt install -y ca-certificates  && \
+    #      ping -c 1 gitlab.example.com && \
+    #      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
+    #      cp /gitlab/certs/gitlab.example.com.crt /usr/local/share/ca-certificates/ && \
+    #      update-ca-certificates && \
+    #      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
+    #      git clone https://gitlab.example.com/root/abc.git
+    image: ubuntu:26.04
     volumes:
       - ./.secrets/create-certificate_SERVICE/ssl:/gitlab/certs:ro
     depends_on:
@@ -97,21 +107,7 @@ services:
       - gitlab-worker
     extra_hosts:
       - "gitlab.example.com:host-gateway"
-    command: ["/bin/bash","-c", "\
-      echo '****************** Installing missing packages (long/can break)...' && \
-      apt clean -qq && apt update -qq && apt install -yqq ca-certificates git curl wget iputils-ping && \
-      echo '****************** PING gitlab...' && \
-      ping -c 1 gitlab.example.com && \
-      echo '****************** Validate untrusted certificate...' && \
-      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
-      echo '****************** Installing certificate...' && \
-      cp /gitlab/certs/gitlab.example.com.crt /usr/local/share/ca-certificates/ && \
-      update-ca-certificates && \
-      echo '****************** Validate installed certificate...' && \
-      echo | openssl s_client -connect gitlab.example.com:443 2>&1 | grep 'Verify return code' && \
-      echo '****************** DONE...' && \
-      /bin/bash \
-    "]
+    command: ["/bin/bash"]
     tty: true
     stdin_open: true
 
