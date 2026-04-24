@@ -60,7 +60,7 @@ services:
       - DOCKER_TLS_SAN=DNS:dind
     volumes:
       - ./.secrets/dind_SERVICE/certs:/certs
-      - './.data/dind_SERVICE/dind-storage:/var/lib/docker'
+      - dind-storage:/var/lib/docker
     networks:
       - gitlab-internal
 
@@ -144,12 +144,13 @@ services:
       - DOCKER_CERT_PATH=/certs/client
     volumes:
       - ./.secrets/dind_SERVICE/certs:/certs
-      - ./.data/runner_SERVICE/runner-storage:/etc/gitlab-runner:z
-      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro
+      - runner-config:/etc/gitlab-runner:z
+      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro,z
     networks:
-      - gitlab-internal
+      gitlab-internal:
     extra_hosts:
       - "gitlab.example.com:host-gateway"
+
 
   register-runner-docker:
     image: gitlab/gitlab-runner
@@ -165,9 +166,9 @@ services:
             --locked=false \
             --name="GitLab Docker Runner" \
             --executor=docker \
-            --docker-image=ubuntu:22.04 \
+            --docker-image=ubuntu:latest \
             --docker-host=tcp://dind:2376 \
-            --docker-volumes "/etc/gitlab-runner/certs:/etc/gitlab-runner/certs" \
+            --docker-volumes "/etc/gitlab-runner/certs:/etc/gitlab-runner/certs/extra" \
             --docker-extra-hosts="gitlab.example.com:host-gateway" \
             --tag-list="docker,ubuntu" \
             --run-untagged=true \
@@ -178,20 +179,22 @@ services:
     environment:
       - CI_SERVER_URL=https://gitlab.example.com
       - REGISTRATION_TOKEN=2Ej7yHbUSeYH6mivKVTE
-      - DOCKER_HOST=tcp://dind:2376
       - DOCKER_TLS_VERIFY=1
-      - DOCKER_TLS_CERTDIR=/certs
       - DOCKER_CERT_PATH=/certs/client
     volumes:
       - ./.secrets/dind_SERVICE/certs:/certs
-      - ./.data/runner_SERVICE/runner-storage:/etc/gitlab-runner:z
-      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro
+      - runner-config:/etc/gitlab-runner:z
+      - ./.secrets/create-certificate_SERVICE/ssl:/etc/gitlab-runner/certs:ro,z
     profiles:
       - manual
     networks:
       gitlab-internal:
     extra_hosts:
       - "gitlab.example.com:host-gateway"
+
+volumes:
+  runner-config:
+  dind-storage:
 
 networks:
   gitlab-internal:
