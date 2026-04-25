@@ -19,10 +19,21 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 10 -nodes \
     -keyout ./.data/gitlab/config/ssl/gitlab.example.com.key \
     -out    ./.data/gitlab/config/ssl/gitlab.example.com.crt \
     -subj "/CN=gitlab.example.com" \
-    -addext "subjectAltName=DNS:gitlab.example.com,IP:127.0.0.1"
+    -addext "subjectAltName=DNS:gitlab.example.com,IP:192.168.1.100"
 ```
 
 start gitlab (takes up to 5 minutes)
 ```shell
 docker compose up -d
+```
+log in gitlab and extract REGISTRATION_TOKEN, place in runnrer registration script
+start runner, register runner, create gitlab project with .gitlab-ci.yml
+```text
+build-job:
+  stage: build
+  image: ubuntu:latest
+  script:
+    - echo "Hello, $GITLAB_USER_LOGIN!"
+    - ls -l
+    - touch /etc/dind-share-folder/abc.txt
 ```

@@ -48,7 +48,7 @@ services:
       - './.data/gitlab_SERVICE/logs:/var/log/gitlab'
       - './.data/gitlab_SERVICE/data:/var/opt/gitlab'
     networks:
-      - gitlab-internal
+      - gitlab-other
 
   dind:
     image: docker:29.4.1-dind
@@ -197,4 +197,5 @@ volumes:
   dind-storage:
 
 networks:
+  gitlab-other:
   gitlab-internal:

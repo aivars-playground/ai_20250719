@@ -7,11 +7,12 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://gitlab.example.com'
+        letsencrypt['enable'] = false
         nginx['redirect_http_to_https'] = true
         nginx['ssl_certificate'] = '/etc/gitlab/ssl/gitlab.example.com.crt'
         nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/gitlab.example.com.key'
         gitlab_rails['gitlab_shell_ssh_port'] = 22
-        gitlab_rails['initial_root_password'] = 'supersecret'
+        gitlab_rails['initial_root_password'] = 'strongpassword'
     ports:
       - '80:80'
       - '443:443'
@@ -35,10 +36,11 @@ services:
     volumes:
       - dind-storage:/var/lib/docker
       - certs:/certs
+      - dind-share-volume:/etc/dind-share-folder
     networks:
       gitlab-worker:
     extra_hosts:
-      - "gitlab.example.com:host-gateway"
+      - "gitlab.example.com:192.168.1.100"
 
   runner:
     image: gitlab/gitlab-runner
@@ -50,13 +52,13 @@ services:
       - DOCKER_TLS_VERIFY=1
       - DOCKER_CERT_PATH=/certs/client
     volumes:
-      - './.data/gitlab/config/ssl:/etc/gitlab-runner/certs'
       - certs:/certs:ro
-      - runner-config:/etc/gitlab-runner:z
+      - runner-config:/etc/gitlab-runner
+      - ./.data/gitlab/config/ssl/gitlab.example.com.crt:/etc/gitlab-runner/certs/gitlab.example.com.crt:ro
     networks:
       gitlab-worker:
     extra_hosts:
-      - "gitlab.example.com:host-gateway"
+      - "gitlab.example.com:192.168.1.100"
 
   register-runner-docker:
     image: gitlab/gitlab-runner
@@ -74,8 +76,8 @@ services:
             --executor=docker \
             --docker-image=ubuntu:latest \
             --docker-host=tcp://dind:2376 \
-            --docker-volumes "/etc/gitlab-runner/certs:/etc/gitlab-runner/certs" \
-            --docker-extra-hosts="gitlab.example.com:host-gateway" \
+            --docker-volumes="/etc/dind-share-folder:/etc/dind-share-folder" \
+            --docker-extra-hosts="gitlab.example.com:192.168.1.100" \
             --tag-list="docker,ubuntu" \
             --run-untagged=true \
             --tls-ca-file=/etc/gitlab-runner/certs/gitlab.example.com.crt
@@ -84,55 +86,19 @@ services:
         fi
     environment:
       - CI_SERVER_URL=https://gitlab.example.com
-      - REGISTRATION_TOKEN=<something>
+      - REGISTRATION_TOKEN=HwNAw6xfxkG71gBsQUtp
       - DOCKER_TLS_VERIFY=1
       - DOCKER_CERT_PATH=/certs/client
     volumes:
-      - './.data/gitlab/config/ssl:/etc/gitlab-runner/certs'
       - certs:/certs:ro
-      - runner-config:/etc/gitlab-runner:z
+      - runner-config:/etc/gitlab-runner
+      - ./.data/gitlab/config/ssl/gitlab.example.com.crt:/etc/gitlab-runner/certs/gitlab.example.com.crt:ro
     profiles:
       - manual
     networks:
       gitlab-worker:
     extra_hosts:
-      - "gitlab.example.com:host-gateway"
-
-  register-runner-cli:
-    image: gitlab/gitlab-runner
-    depends_on:
-      - dind
-    entrypoint: [ "/bin/sh", "-c" ]
-    command:
-      - |
-        if [ ! -f /etc/gitlab-runner/config.toml ]; then
-          echo "Config does not exist, registering runner..."
-          gitlab-runner register \
-            --non-interactive \
-            --locked=false \
-            --name="GitLab Shell Runner" \
-            --executor=shell \
-            --tag-list="shell,ubuntu" \
-            --run-untagged=true \
-            --tls-ca-file=/etc/gitlab-runner/certs/gitlab.example.com.crt
-        else
-          echo "Runner config already exists, skipping registration"
-        fi
-    environment:
-      - CI_SERVER_URL=https://gitlab.example.com
-      - REGISTRATION_TOKEN=<something>
-      - DOCKER_TLS_VERIFY=1
-      - DOCKER_CERT_PATH=/certs/client
-    volumes:
-      - './.data/gitlab/config/ssl:/etc/gitlab-runner/certs'
-      - certs:/certs:ro
-      - runner-config:/etc/gitlab-runner:z
-    profiles:
-      - manual
-    networks:
-      gitlab-worker:
-    extra_hosts:
-      - "gitlab.example.com:host-gateway"
+      - "gitlab.example.com:192.168.1.100"
 
   cli:
     image: docker:cli
@@ -164,6 +130,8 @@ volumes:
   runner-config:
   dind-storage:
   certs:
+  dind-share-volume:
+
 
 networks:
   gitlab-worker:
